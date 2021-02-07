@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">NoteKeeper</string>
+    <string name="enter_note">Enter Note</string>
+    <string name="mark_as_important">Mark as Important</string>
 </resources>
