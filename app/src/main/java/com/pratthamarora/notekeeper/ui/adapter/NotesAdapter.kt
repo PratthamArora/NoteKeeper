@@ -10,10 +10,30 @@ import com.pratthamarora.notekeeper.data.models.Notes
 import com.pratthamarora.notekeeper.databinding.ItemNoteBinding
 
 
-class NotesAdapter : ListAdapter<Notes, NotesAdapter.NotesViewHolder>(NotesDiffCallback()) {
+class NotesAdapter(private val listener: OnItemClickListener) :
+    ListAdapter<Notes, NotesAdapter.NotesViewHolder>(NotesDiffCallback()) {
 
-    class NotesViewHolder(private val binding: ItemNoteBinding) :
+    inner class NotesViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.apply {
+                root.setOnClickListener {
+                    val pos = adapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        val note = getItem(pos)
+                        listener.onItemClick(note)
+                    }
+                }
+                noteDoneCheckBox.setOnClickListener {
+                    val pos = adapterPosition
+                    if (pos != RecyclerView.NO_POSITION) {
+                        val note = getItem(pos)
+                        listener.onCheckBoxClick(note, noteDoneCheckBox.isChecked)
+                    }
+                }
+            }
+        }
 
         fun bind(note: Notes) {
             binding.apply {
@@ -21,10 +41,15 @@ class NotesAdapter : ListAdapter<Notes, NotesAdapter.NotesViewHolder>(NotesDiffC
                     noteDoneCheckBox.isChecked = isCompleted
                     noteText.text = name
                     noteText.paint.isStrikeThruText = isCompleted
-                    notePriority.isVisible = isCompleted
+                    notePriority.isVisible = isImportant
                 }
             }
         }
+    }
+
+    interface OnItemClickListener {
+        fun onItemClick(note: Notes)
+        fun onCheckBoxClick(note: Notes, isChecked: Boolean)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotesViewHolder {

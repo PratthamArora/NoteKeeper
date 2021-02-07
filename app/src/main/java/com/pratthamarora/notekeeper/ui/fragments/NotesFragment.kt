@@ -9,23 +9,28 @@ import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.pratthamarora.notekeeper.R
+import com.pratthamarora.notekeeper.data.models.Notes
 import com.pratthamarora.notekeeper.databinding.FragmentAllNotesBinding
 import com.pratthamarora.notekeeper.ui.adapter.NotesAdapter
 import com.pratthamarora.notekeeper.utils.SortOrder
 import com.pratthamarora.notekeeper.utils.onQueryTextChanged
 import com.pratthamarora.notekeeper.viewmodel.NotesViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class NotesFragment : Fragment(R.layout.fragment_all_notes) {
+class NotesFragment : Fragment(R.layout.fragment_all_notes), NotesAdapter.OnItemClickListener {
 
     private val notesViewModel by viewModels<NotesViewModel>()
     private val notesAdapter by lazy {
-        NotesAdapter()
+        NotesAdapter(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -75,6 +80,22 @@ class NotesFragment : Fragment(R.layout.fragment_all_notes) {
                 adapter = notesAdapter
                 setHasFixedSize(true)
             }
+            ItemTouchHelper(object :
+                ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ): Boolean {
+                    return false
+                }
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val note = notesAdapter.currentList[viewHolder.adapterPosition]
+                    notesViewModel.onNoteSwiped(note)
+                }
+
+            }).attachToRecyclerView(allNotesRecyclerView)
         }
 
         notesViewModel.notes.observe(viewLifecycleOwner) {
@@ -82,5 +103,26 @@ class NotesFragment : Fragment(R.layout.fragment_all_notes) {
                 notesAdapter.submitList(it)
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            notesViewModel.noteEvent.collect { event ->
+                when (event) {
+                    is NotesViewModel.NotesEvent.ShowSnackBarWithUndo -> {
+                        Snackbar.make(requireView(), "Note Deleted", Snackbar.LENGTH_LONG)
+                            .setAction("UNDO") {
+                                notesViewModel.onPressedUndo(event.note)
+                            }.show()
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onItemClick(note: Notes) {
+        notesViewModel.onNoteSelected(note)
+    }
+
+    override fun onCheckBoxClick(note: Notes, isChecked: Boolean) {
+        notesViewModel.onNoteCheckedChanged(note, isChecked)
     }
 }
