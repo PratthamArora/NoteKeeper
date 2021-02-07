@@ -1,7 +1,8 @@
-package com.pratthamarora.notekeeper
+package com.pratthamarora.notekeeper.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.pratthamarora.notekeeper.R
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
