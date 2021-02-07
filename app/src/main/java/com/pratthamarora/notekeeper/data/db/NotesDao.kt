@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NotesDao {
 
-    @Query("SELECT * FROM NOTES_TABLE")
-    fun getAllNotes(): Flow<List<Notes>>
+    @Query("SELECT * FROM NOTES_TABLE where name LIKE '%' || :searchQuery || '%' ORDER BY isImportant DESC")
+    fun getAllNotes(searchQuery: String): Flow<List<Notes>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: Notes)
