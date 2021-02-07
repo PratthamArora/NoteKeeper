@@ -8,6 +8,7 @@ import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.pratthamarora.notekeeper.R
 import com.pratthamarora.notekeeper.databinding.FragmentAllNotesBinding
@@ -16,6 +17,8 @@ import com.pratthamarora.notekeeper.utils.SortOrder
 import com.pratthamarora.notekeeper.utils.onQueryTextChanged
 import com.pratthamarora.notekeeper.viewmodel.NotesViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class NotesFragment : Fragment(R.layout.fragment_all_notes) {
@@ -32,21 +35,26 @@ class NotesFragment : Fragment(R.layout.fragment_all_notes) {
         searchView.onQueryTextChanged {
             notesViewModel.searchQuery.value = it
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            menu.findItem(R.id.action_hide_completed).isChecked =
+                notesViewModel.preferences.first().isCompleted
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_sort_name -> {
-                notesViewModel.sortOrder.value = SortOrder.BY_NAME
+                notesViewModel.setSortOrderSelected(SortOrder.BY_NAME)
                 true
             }
             R.id.action_sort_date_created -> {
-                notesViewModel.sortOrder.value = SortOrder.BY_DATE
+                notesViewModel.setSortOrderSelected(SortOrder.BY_DATE)
                 true
             }
             R.id.action_hide_completed -> {
                 item.isChecked = !item.isChecked
-                notesViewModel.isCompleted.value = item.isChecked
+                notesViewModel.setIsCompleted(item.isChecked)
                 true
             }
             R.id.action_delete_completed -> {
