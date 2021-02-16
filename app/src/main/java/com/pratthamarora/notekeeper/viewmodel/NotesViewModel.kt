@@ -1,15 +1,13 @@
 package com.pratthamarora.notekeeper.viewmodel
 
+import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.pratthamarora.notekeeper.data.db.NotesDao
 import com.pratthamarora.notekeeper.data.db.local.DataStoreManager
 import com.pratthamarora.notekeeper.data.models.Notes
 import com.pratthamarora.notekeeper.utils.SortOrder
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -17,15 +15,16 @@ import kotlinx.coroutines.launch
 
 class NotesViewModel @ViewModelInject constructor(
     private val notesDao: NotesDao,
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: DataStoreManager,
+    @Assisted private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val notesChannel = Channel<NotesEvent>()
     val noteEvent = notesChannel.receiveAsFlow()
-    val searchQuery = MutableStateFlow("")
+    val searchQuery = savedStateHandle.getLiveData("searchQuery", "")
     val preferences = dataStoreManager.preferences
     private val notesFlow = combine(
-        searchQuery,
+        searchQuery.asFlow(),
         preferences
     ) { query, prefs ->
         Pair(query, prefs)
@@ -42,9 +41,10 @@ class NotesViewModel @ViewModelInject constructor(
         dataStoreManager.setIsCompleted(isCompleted)
     }
 
-    fun onNoteSelected(note: Notes) {
-
+    fun onNoteSelected(note: Notes) = viewModelScope.launch {
+        notesChannel.send(NotesEvent.NavigateToEditNoteScreen(note))
     }
+
 
     fun onNoteCheckedChanged(note: Notes, checked: Boolean) = viewModelScope.launch {
         notesDao.updateNote(note.copy(isCompleted = checked))
@@ -59,8 +59,15 @@ class NotesViewModel @ViewModelInject constructor(
         notesDao.insertNote(note)
     }
 
+    fun onAddNewNote() = viewModelScope.launch {
+        notesChannel.send(NotesEvent.NavigateToAddNoteScreen)
+    }
+
+
     sealed class NotesEvent {
         data class ShowSnackBarWithUndo(val note: Notes) : NotesEvent()
+        data class NavigateToEditNoteScreen(val note: Notes) : NotesEvent()
+        object NavigateToAddNoteScreen : NotesEvent()
     }
 
 }

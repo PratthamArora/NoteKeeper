@@ -9,6 +9,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,8 +19,10 @@ import com.pratthamarora.notekeeper.data.models.Notes
 import com.pratthamarora.notekeeper.databinding.FragmentAllNotesBinding
 import com.pratthamarora.notekeeper.ui.adapter.NotesAdapter
 import com.pratthamarora.notekeeper.utils.SortOrder
+import com.pratthamarora.notekeeper.utils.exhaustive
 import com.pratthamarora.notekeeper.utils.onQueryTextChanged
 import com.pratthamarora.notekeeper.viewmodel.NotesViewModel
+import com.pratthamarora.notekeeper.viewmodel.NotesViewModel.NotesEvent.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
@@ -96,6 +99,10 @@ class NotesFragment : Fragment(R.layout.fragment_all_notes), NotesAdapter.OnItem
                 }
 
             }).attachToRecyclerView(allNotesRecyclerView)
+
+            addNoteButton.setOnClickListener {
+                notesViewModel.onAddNewNote()
+            }
         }
 
         notesViewModel.notes.observe(viewLifecycleOwner) {
@@ -107,13 +114,22 @@ class NotesFragment : Fragment(R.layout.fragment_all_notes), NotesAdapter.OnItem
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             notesViewModel.noteEvent.collect { event ->
                 when (event) {
-                    is NotesViewModel.NotesEvent.ShowSnackBarWithUndo -> {
+                    is ShowSnackBarWithUndo -> {
                         Snackbar.make(requireView(), "Note Deleted", Snackbar.LENGTH_LONG)
                             .setAction("UNDO") {
                                 notesViewModel.onPressedUndo(event.note)
                             }.show()
                     }
-                }
+                    is NavigateToAddNoteScreen -> {
+                        val action = NotesFragmentDirections.actionNotesFragmentToAddNoteFragment3()
+                        findNavController().navigate(action)
+                    }
+                    is NavigateToEditNoteScreen -> {
+                        val action =
+                            NotesFragmentDirections.actionNotesFragmentToAddNoteFragment3(event.note)
+                        findNavController().navigate(action)
+                    }
+                }.exhaustive
             }
         }
     }

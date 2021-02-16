@@ -15,7 +15,13 @@
     </fragment>
     <fragment
         android:id="@+id/addNoteFragment"
-        android:name="com.pratthamarora.notekeeper.ui.fragments.AddNoteFragment"
+        android:name="com.pratthamarora.notekeeper.ui.fragments.AddEditNoteFragment"
         android:label="fragment_add_note"
-        tools:layout="@layout/fragment_add_note" />
+        tools:layout="@layout/fragment_add_note">
+        <argument
+            android:name="note"
+            android:defaultValue="@null"
+            app:argType="com.pratthamarora.notekeeper.data.models.Notes"
+            app:nullable="true" />
+    </fragment>
 </navigation>
